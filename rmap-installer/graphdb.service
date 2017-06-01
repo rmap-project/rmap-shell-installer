@@ -1,0 +1,23 @@
+# Systemd unit file for GraphDB
+
+# Must run SED on this file to replace USERID, JAVAHOME and GRAPHDB values, like this:
+# sed 's,USERID,rmap,; s,JAVAHOME,/rmap/oracle/jdk1.8.0_91/bin,;s,GRAPHDB,/rmap/graphdb-free.8.0.6,' < graphdb.service > /etc/systemd/system/graphdb.service
+
+[Unit]
+Description=GraphDB Triplestore
+After=syslog.target network.target
+
+[Service]
+User=USERID
+Group=USERID
+Type=forking
+
+Environment=JAVA_HOME=JAVAHOME
+
+ExecStart=GRAPHDB/bin/graphdb -d
+# To find graphdb PID: filter 'ps' output twice, take first word in result.
+ExecStop=sudo kill `ps ax | grep graphdb | grep java | awk '{print $1;}'`
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
