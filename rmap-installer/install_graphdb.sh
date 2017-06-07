@@ -3,6 +3,10 @@
 # Installs a stand-alone GraphDB server in support of an RMap server.
 # The account used to run the script must have sudo privileges.
 
+# Only include this file once
+[[ -n "$RMAP_GRAPHDB_INCLUDED" ]] && return
+RMAP_GRAPHDB_INCLUDED=true
+
 ################################################################################
 # Initialization
 
@@ -73,20 +77,23 @@ set_owner_and_group $GRAPHDB_PATH
 ################################################################################
 # Set up firewall
 
+# Previously, firewalld was used to open ports as a precaution.
+# Presently, we are assuming that the ports are open before installation.
+# In the future, we may replace the precautionary calls using iptables.
 # Make sure firewall is enabled and started.  Permanently open port 7200.
-if [[ -z $IS_UPGRADE ]]; then
-    print_green "Setting up Firewall..."
-    systemctl enable firewalld &>> $LOGFILE \
-        || abort "Could not enable firewall"
-    systemctl start firewalld &>> $LOGFILE \
-        || abort "Could not start firewall"
-    if [[ `firewall-cmd --list-ports | grep 7200 | wc -l` == 0 ]]; then
-        firewall-cmd --zone=public --permanent --add-port=7200/tcp &>> $LOGFILE \
-            || abort "Could not open port 7200"
-    fi
-    firewall-cmd --reload &>> $LOGFILE \
-        || abort "Could not reload firewall settings"
-fi
+#if [[ -z $IS_UPGRADE ]]; then
+#    print_green "Setting up Firewall..."
+#    systemctl enable firewalld &>> $LOGFILE \
+#        || abort "Could not enable firewall"
+#    systemctl start firewalld &>> $LOGFILE \
+#        || abort "Could not start firewall"
+#    if [[ `firewall-cmd --list-ports | grep 7200 | wc -l` == 0 ]]; then
+#        firewall-cmd --zone=public --permanent --add-port=7200/tcp &>> $LOGFILE \
+#            || abort "Could not open port 7200"
+#    fi
+#    firewall-cmd --reload &>> $LOGFILE \
+#        || abort "Could not reload firewall settings"
+#fi
 
 
 ################################################################################
@@ -104,12 +111,8 @@ systemctl enable graphdb &>> $LOGFILE \
 systemctl start graphdb &>> $LOGFILE \
     || abort "Could not start GraphDB server"
 
-# Find this computer's IP address, build REST API address.
-IPADDR=`hostname -I | tr -d '[:space:]'` \
-    || abort "Could not find IP address"
-RESTAPI=http://$IPADDR:7200/rest
-
 # Wait for GraphDB to become responsive
+RESTAPI=http://$IPADDR:7200/rest
 print_yellow_noeol "Starting GraphDB (this can take several minutes)"
 status=0
 while [[ $status != 'false' && $status != 'true' ]]
@@ -143,7 +146,7 @@ if [[ -z $IS_UPGRADE ]]; then
         $RESTAPI/security/user \
         -H 'Content-Type: application/json' \
         -H 'Accept: text/plain' \
-        -d @- << EOF
+        -d @- &>> $LOGFILE << EOF
         {
             "username": "rmap",
             "password": "rmap",
