@@ -1,13 +1,13 @@
 README for installing an RMap server or its individual components.
 
-Draft release as of 6/1/2017
+Draft release as of 6/7/2017
 
 Description:
 * This installation package deploys several components that together constitute an RMap server.
 * Those components include the Java JDK, Apache Tomcat, Ontotext GraphDB, MySQL and RMap.
-* The "full" installer will eventually be able to deploy all components needed for a working RMap.
-* The Java, Tomcat, GraphDB and MySQl sub-installers are functional, but not finalized.
-* The RMap installer is still under development.
+* All components are currently installed, but the install process is not yet finalized.
+* There are some known issues with the RMap component, including API access and OAuth functionality.
+* The RMap component installer is still under development.
 * Individual components can be installed separately, and on different computers.
 
 System Requirements
@@ -45,8 +45,7 @@ MySQL
 * During the initial installation, the local user "rmap" is given access to the "rmap" database.
 
 RMap
-* The RMap components can (partially) be installed separately with install_rmap.sh.
-* Currently, only the NOID component is installed.
+* The RMap components can be installed separately with install_rmap.sh.
 * Development is continuing on the RMap API and RMap web authoring component installations.
 
 Directions:

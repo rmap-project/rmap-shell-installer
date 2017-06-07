@@ -5,7 +5,7 @@
 # Calling this script directly will not install anything.
 
 # Only include this file once
-[[ -n RMAP_COMMON_INCLUDED ]] || exit 0
+[[ -n "$RMAP_COMMON_INCLUDED" ]] && return
 RMAP_COMMON_INCLUDED=true
 
 ###############################################################################
@@ -29,10 +29,20 @@ GRAPHDB_DIR=graphdb-free-8.0.6
 GRAPHDB_ZIP=graphdb-free-8.0.6-dist.zip
 GRAPHDB_URI=http://download.ontotext.com/owlim/6497f7fa-15e0-11e7-84d0-06278a02ff7a/$GRAPHDB_ZIP
 
+# MySQL
+DATABASE_NAME=rmap
+
 # NOID
 NOID_DIR=Noid-0.424
 NOID_ZIP=Noid-0.424.tar.gz
 NOID_URI=http://search.cpan.org/CPAN/authors/id/J/JA/JAK/$NOID_ZIP
+
+# RMAP
+RMAP_API_WAR=rmap-api-1.0.0-beta.war
+RMAP_APP_WAR=rmap-webapp-1.0.0-beta.war
+RMAP_DOWNLOAD=https://github.com/rmap-project/rmap/releases/download/v1.0.0-beta
+RMAP_API_URI=$RMAP_DOWNLOAD/$RMAP_API_WAR
+RMAP_APP_URI=$RMAP_DOWNLOAD/$RMAP_APP_WAR
 
 # Installation folder
 PARENT_DIR=/rmap
@@ -96,6 +106,10 @@ function print_white
 
 # Get the ID of the current user
 USERID=`logname`
+
+# Get the IP Address of this computer
+IPADDR=`hostname -I 2>> $LOGFILE | tr -d '[:space:]'` \
+    || abort "Could not find IP address"
 
 # Make sure yum is ready to install new modules
 print_green "Updating yum cache..."

@@ -4,6 +4,10 @@
 # the zip file that is included in the install package.
 # The account used to run the script must have sudo privileges.
 
+# Only include this file once
+[[ -n "$RMAP_JAVA_INCLUDED" ]] && return
+RMAP_JAVA_INCLUDED=true
+
 source install_common.sh
 
 confirm_sudo
@@ -31,5 +35,8 @@ if [[ ! -d $JAVA_PATH ]]; then
     remove $JDK_ZIP
     set_owner_and_group $JAVA_PATH \
         || abort "Could not set owner of JDK folder"
+
+    print_white "Done installing Java!"
+    print_white "" # Blank line
 fi
 

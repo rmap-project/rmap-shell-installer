@@ -3,7 +3,12 @@
 # This script installs a Tomcat server in support of an RMap server.
 # The account used to run the script must have sudo privileges.
 
-# install_common.sh and other initialization is performed in install_java.sh
+# Only include this file once
+[[ -n "$RMAP_TOMCAT_INCLUDED" ]] && return
+RMAP_TOMCAT_INCLUDED=true
+
+source install_common.sh
+
 source install_java.sh
 
 ensure_service_stopped tomcat
@@ -44,30 +49,31 @@ cp catalina.properties $TOMCAT_PATH/conf &>> $LOGFILE \
 ################################################################################
 # Set up firewall
 
-# Make sure firewall is enabled and started.
-# Permanently open ports for HTTP and HTTPS.
+# Make sure iptables is enabled and started.
+# If needed - Open ports for HTTP and HTTPS.
 # Forward default HTTP and HTTPS ports to Tomcat's ports.
+# Save settings for use when iptables restarts.
+# TODO - Only issue these commands once or they will build up in the iptable.
+
 print_green "Setting up Firewall..."
-systemctl enable firewalld &>> $LOGFILE \
-    || abort "Could not enable firewall"
-systemctl start firewalld &>> $LOGFILE \
-    || abort "Could not start firewall"
-firewall-cmd --zone=public --permanent --add-service=http &>> $LOGFILE \
-    || abort "Could not open firewall for http"
-firewall-cmd --zone=public --permanent --add-service=https &>> $LOGFILE \
-    || abort "Could not open firewall for https"
-firewall-cmd --zone=public --permanent \
-    --add-forward-port=port=80:proto=tcp:toport=8080 &>> $LOGFILE \
+systemctl enable iptables &>> $LOGFILE \
+    || abort "Could not enable iptables"
+systemctl start iptables &>> $LOGFILE \
+    || abort "Could not start iptables"
+iptables -t nat -I PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8080 \
+    &>> $LOGFILE \
     || abort "Could not forward port 80 to 8080"
-firewall-cmd --zone=public --permanent --add-port=8080/tcp &>> $LOGFILE \
-    || abort "Could not open port 8080"
-firewall-cmd --zone=public --permanent \
-    --add-forward-port=port=443:proto=tcp:toport=8443 &>> $LOGFILE \
+iptables -t nat -I OUTPUT -p tcp -o lo --dport 80 -j REDIRECT --to-ports 8080 \
+    &>> $LOGFILE \
+    || abort "Could not forward port 80 to 8080"
+iptables -t nat -I PREROUTING -p tcp --dport 443 -j REDIRECT --to-port 8443 \
+    &>> $LOGFILE \
     || abort "Could not forward port 443 to 8443"
-firewall-cmd --zone=public --permanent --add-port=8443/tcp &>> $LOGFILE \
-    || abort "Could not open port 8443"
-firewall-cmd --reload &>> $LOGFILE \
-    || abort "Could not reload firewall settings"
+iptables -t nat -I OUTPUT -p tcp -o lo --dport 443 -j REDIRECT --to-ports 8443 \
+    &>> $LOGFILE \
+    || abort "Could not forward port 443 to 8443"
+service iptables save &>> $LOGFILE \
+    || "Could not save iptables settings"
 
 
 ################################################################################
@@ -75,7 +81,7 @@ firewall-cmd --reload &>> $LOGFILE \
 
 # Create and start a service for Tomcat
 print_green "Setting up Tomcat service..."
-sed "s,USERID,$USERID,; s,JAVAHOME,$JAVA_PATH,; s,TOMCATHOME,$TOMCAT_PATH,; s,NOIDHOME,NOID_PATH," \
+sed "s,USERID,$USERID,; s,JAVAHOME,$JAVA_PATH,; s,TOMCATHOME,$TOMCAT_PATH,; s,NOIDHOME,$NOID_PATH," \
     < tomcat.service > /etc/systemd/system/tomcat.service 2>> $LOGFILE \
     || abort "Could not configure Tomcat service"
 systemctl daemon-reload &>> $LOGFILE \
@@ -87,8 +93,6 @@ systemctl start tomcat &>> $LOGFILE \
 
 # Wait for GraphDB to become responsive
 print_yellow_noeol "Starting Tomcat (this can take several seconds)"
-IPADDR=`hostname -I | tr -d '[:space:]'` 2>> $LOGFILE \
-    || abort "Could not find IP address"
 status=1
 while [[ $status != 0 ]]
 do

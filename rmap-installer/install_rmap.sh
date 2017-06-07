@@ -3,10 +3,12 @@
 # This script installs an RMap server.
 # The account used to run the script must have sudo privileges.
 
-source install_common.sh
-# TODO - Restore the line below when development is complete
+# Only include this file once
+[[ -n "$RMAP_RMAP_INCLUDED" ]] && return
+RMAP_RMAP_INCLUDED=true
+
 # install_common.sh and other initialization is performed in install_tomcat.sh
-# source install_tomcat.sh
+source install_tomcat.sh
 
 
 ################################################################################
@@ -65,7 +67,7 @@ print_green "Unzipping NOID..."
 tar -xf $NOID_ZIP -C $PARENT_DIR &>> $LOGFILE \
     || abort "Could not unzip NOID"
 # Install NOID for perl
-cp $NOID_PATH/lib/Noid.pm /usr/local/share/perl5 &>> $LOGFILE \
+cp $NOID_PATH/lib/Noid.pm /usr/share/perl5 &>> $LOGFILE \
     || abort "Could not install NOID perl library"
 remove $NOID_ZIP
 # Remove the "tainted" flag from the NOID script
@@ -96,12 +98,12 @@ fi
 
 # Create the NOID web service
 print_green "Creating NOID web service..."
-pushd $TOMCAT_PATH/webapps > $LOGFILE
+pushd $TOMCAT_PATH/webapps &>> $LOGFILE
 wget https://github.com/rmap-project/rmap/releases/download/v1.0.0-beta/noid.war \
-    > $LOGFILE 2>/dev/null \
+    >> $LOGFILE 2>/dev/null \
         || abort "Could not download NOID web app"
 set_owner_and_group noid.war
-popd > $LOGFILE
+popd &>> $LOGFILE
 sed "s,NOIDPATH,$NOID_PATH,g" < noid.sh > $NOID_PATH/noid.sh 2>> $LOGFILE \
     || abort "Could not install NOID script"
 chmod 775 $NOID_PATH/noid.sh &>> $LOGFILE \
@@ -113,23 +115,26 @@ set_owner_and_group $NOID_PATH
 
 ################################################################################
 # RMap API
+
 print_green "Downloading RMap API web app..."
-wget --no-verbose \
-    https://github.com/rmap-project/rmap/releases/download/v1.0.0-beta/rmap-api-1.0.0-beta.war \
-    2>> $LOGFILE \
-        || abort "Could not download RMap API web app"
-mv rmap-api-1.0.0-beta.war $TOMCAT_PATH/webapps/api.war &>> $LOGFILE \
+wget --no-verbose $RMAP_API_URI 2>> $LOGFILE \
+    || abort "Could not download RMap API web app"
+
+print_green "Installing RMap API web app..."
+mv $RMAP_API_WAR $TOMCAT_PATH/webapps/api.war &>> $LOGFILE \
     || abort "Could not install RMap API web app"
-# TODO - How best to wait for api folder to be created?
-sleep 2
+# Wait for WAR file to be processed and "api" folder to be created
 API_PROP_PATH=$TOMCAT_PATH/webapps/api/WEB-INF/classes
-# TODO - Move the IPADDR definition to the common script?
-IPADDR=`hostname -I 2>> $LOGFILE | tr -d '[:space:]'` \
-    || abort "Could not find IP address"
+while [[ ! -d "$API_PROP_PATH" ]]
+do
+    sleep 1
+done
+
+print_green "Configuring RMap API web app..."
 sed "s,RMAPSERVERURL,$IPADDR," \
     < rmapapi.properties > $API_PROP_PATH/rmapapi.properties 2>> $LOGFILE \
         || abort "Could not modify RMap API properties file"
-sed "s,RMAPSERVERURL,$IPADDR,; s,MYSQLSERVERURL,$IPADDR," \
+sed "s,RMAPSERVERURL,$IPADDR,; s,MYSQLSERVERURL,$IPADDR,; s,DATABASENAME,$DATABASE_NAME," \
     < rmapauth.properties > $API_PROP_PATH/rmapauth.properties 2>> $LOGFILE \
         || abort "Could not modify RMap Authorization properties file"
 sed "s,GRAPHDBSERVERURL,$IPADDR," \
@@ -139,7 +144,33 @@ sed "s,GRAPHDBSERVERURL,$IPADDR," \
 
 ################################################################################
 # RMap Account Manager
-print_yellow "   RMap Account Manager is not currently installed!"
+
+print_green "Downloading RMap Account Manager web app..."
+wget --no-verbose $RMAP_APP_URI 2>> $LOGFILE \
+    || abort "Could not download RMap Account Manager web app"
+
+print_green "Installing RMap Account Manager web app..."
+# TODO - Instead, move this to "ROOT" and move "ROOT" to "tomcat"?
+mv $RMAP_APP_WAR $TOMCAT_PATH/webapps/app.war &>> $LOGFILE \
+    || abort "Could not install RMap Account Manager web app"
+# Wait for WAR file to be processed and "app" folder to be created
+APP_PROP_PATH=$TOMCAT_PATH/webapps/app/WEB-INF/classes
+while [[ ! -d "$APP_PROP_PATH" ]]
+do
+    sleep 1
+done
+
+print_green "Configuring RMap Account Management web app..."
+# TODO - Manage OAuth stuff here.
+sed "s,RMAPSERVERURL,$IPADDR," \
+    < rmapweb.properties > $APP_PROP_PATH/rmapweb.properties 2>> $LOGFILE \
+        || abort "Could not modify RMap API properties file"
+sed "s,RMAPSERVERURL,$IPADDR,; s,MYSQLSERVERURL,$IPADDR," \
+    < rmapauth.properties > $APP_PROP_PATH/rmapauth.properties 2>> $LOGFILE \
+        || abort "Could not modify RMap Authorization properties file"
+sed "s,GRAPHDBSERVERURL,$IPADDR," \
+    < rmapcore.properties > $APP_PROP_PATH/rmapcore.properties 2>> $LOGFILE \
+        || abort "Could not modify RMap Core properties file" 
 
 
 ################################################################################
