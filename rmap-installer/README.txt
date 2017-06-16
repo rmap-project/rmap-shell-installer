@@ -1,13 +1,12 @@
 README for installing an RMap server or its individual components.
 
-Draft release as of 6/7/2017
+Draft release as of 6/16/2017
 
 Description:
 * This installation package deploys several components that together constitute an RMap server.
 * Those components include the Java JDK, Apache Tomcat, Ontotext GraphDB, MySQL and RMap.
 * All components are currently installed, but the install process is not yet finalized.
-* There are some known issues with the RMap component, including API access and OAuth functionality.
-* The RMap component installer is still under development.
+* In particular, the OAuth functionality of the RMap component is not yet implemented.
 * Individual components can be installed separately, and on different computers.
 
 System Requirements
@@ -51,11 +50,15 @@ RMap
 Directions:
 * If you would like to create a sudo user named "rmap", issue this command:
      sudo ./create_rmap_user.sh
+* If you would like to generate a signed certificate to allow HTTPS access:
+     sudo ./create_certificate.sh
 * Once logged in as the user who will own the deployed files, issue:
      sudo ./install_tomcat.sh
   and/or:
      sudo ./install_graphdb.sh
   and/or:
      sudo ./install_mysql.sh
+  and/or:
+     sudo ./install_rmap.sh
   or (for all components):
      sudo ./install_all.sh

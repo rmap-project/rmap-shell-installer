@@ -17,11 +17,17 @@ ensure_service_stopped tomcat
 ################################################################################
 # Tomcat files
 
-ensure_sub_folder $TOMCAT_DIR "Tomcat"
-
-# TODO - Do we need to save and restore any folders, or just delete old version?
+# If the tomcat folder already exists, move it aside.
+# Remember this is now an upgrade so data will be copied back after install.
 if [[ -d $TOMCAT_PATH ]]; then
-    remove $TOMCAT_PATH
+    print_green "Backing up Tomcat data..."
+    IS_UPGRADE=true
+    BACKUP_PATH=$PARENT_DIR/$TOMCAT_DIR.back
+    if [[ -d $BACKUP_PATH ]]; then
+        remove $BACKUP_PATH
+    fi
+    mv $TOMCAT_PATH $BACKUP_PATH &>> $LOGFILE \
+        || abort "Could not rename Tomcat folder"
 fi
 
 # Download and unzip Tomcat content
@@ -45,49 +51,67 @@ cp server.xml $TOMCAT_PATH/conf &>> $LOGFILE \
 cp catalina.properties $TOMCAT_PATH/conf &>> $LOGFILE \
     || abort "Could not install properties file"
 
+# If update install, move saved files back
+if [[ -n $IS_UPGRADE ]]; then
+    print_green "Restoring Tomcat data..."
+    if [[ -f $BACKUP_PATH/conf/localhost-rsa.jks ]]; then
+        cp -r $BACKUP_PATH/conf/localhost-rsa.jks $TOMCAT_PATH/conf &>> $LOGFILE \
+            || abort "Could not restore Tomcat work"
+    fi
+fi
+
 
 ################################################################################
 # Set up firewall
 
 # Make sure iptables is enabled and started.
-# If needed - Open ports for HTTP and HTTPS.
 # Forward default HTTP and HTTPS ports to Tomcat's ports.
 # Save settings for use when iptables restarts.
-# TODO - Only issue these commands once or they will build up in the iptable.
+# Starting the service adds some unwanted rules to the tables,
+# so flush all rules after starting.
+# WARNING!  This will disrupt systems with existing rules!
 
-print_green "Setting up Firewall..."
-systemctl enable iptables &>> $LOGFILE \
-    || abort "Could not enable iptables"
-systemctl start iptables &>> $LOGFILE \
-    || abort "Could not start iptables"
-iptables -t nat -I PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8080 \
-    &>> $LOGFILE \
-    || abort "Could not forward port 80 to 8080"
-iptables -t nat -I OUTPUT -p tcp -o lo --dport 80 -j REDIRECT --to-ports 8080 \
-    &>> $LOGFILE \
-    || abort "Could not forward port 80 to 8080"
-iptables -t nat -I PREROUTING -p tcp --dport 443 -j REDIRECT --to-port 8443 \
-    &>> $LOGFILE \
-    || abort "Could not forward port 443 to 8443"
-iptables -t nat -I OUTPUT -p tcp -o lo --dport 443 -j REDIRECT --to-ports 8443 \
-    &>> $LOGFILE \
-    || abort "Could not forward port 443 to 8443"
-service iptables save &>> $LOGFILE \
-    || "Could not save iptables settings"
+if [[ -z $IS_UPGRADE ]]; then
+    print_green "Setting up Firewall..."
+    systemctl enable iptables &>> $LOGFILE \
+        || abort "Could not enable iptables"
+    systemctl start iptables &>> $LOGFILE \
+        || abort "Could not start iptables"
+    iptables -F \
+        || abort "Could not flush iptables rules"
+    iptables -t nat -I PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8080 \
+        &>> $LOGFILE \
+        || abort "Could not forward port 80 to 8080"
+    iptables -t nat -I OUTPUT -p tcp -o lo --dport 80 -j REDIRECT --to-ports 8080 \
+        &>> $LOGFILE \
+        || abort "Could not forward port 80 to 8080"
+    iptables -t nat -I PREROUTING -p tcp --dport 443 -j REDIRECT --to-port 8443 \
+        &>> $LOGFILE \
+        || abort "Could not forward port 443 to 8443"
+    iptables -t nat -I OUTPUT -p tcp -o lo --dport 443 -j REDIRECT --to-ports 8443 \
+        &>> $LOGFILE \
+        || abort "Could not forward port 443 to 8443"
+    service iptables save &>> $LOGFILE \
+        || "Could not save iptables settings"
+fi
 
 
 ################################################################################
 # Tomcat as a Service
 
 # Create and start a service for Tomcat
-print_green "Setting up Tomcat service..."
-sed "s,USERID,$USERID,; s,JAVAHOME,$JAVA_PATH,; s,TOMCATHOME,$TOMCAT_PATH,; s,NOIDHOME,$NOID_PATH," \
-    < tomcat.service > /etc/systemd/system/tomcat.service 2>> $LOGFILE \
-    || abort "Could not configure Tomcat service"
-systemctl daemon-reload &>> $LOGFILE \
-    || abort "Could not refresh services list"
-systemctl enable tomcat &>> $LOGFILE \
-    || abort "Could not enable Tomcat service"
+if [[ -z $IS_UPGRADE ]]; then
+    print_green "Setting up Tomcat service..."
+    sed "s,USERID,$USERID,; s,JAVAHOME,$JAVA_PATH,; s,TOMCATHOME,$TOMCAT_PATH,; s,NOIDHOME,$NOID_PATH," \
+        < tomcat.service > /etc/systemd/system/tomcat.service 2>> $LOGFILE \
+        || abort "Could not configure Tomcat service"
+    systemctl daemon-reload &>> $LOGFILE \
+        || abort "Could not refresh services list"
+    systemctl enable tomcat &>> $LOGFILE \
+        || abort "Could not enable Tomcat service"
+fi
+
+print_green "Starting Tomcat service..."
 systemctl start tomcat &>> $LOGFILE \
     || abort "Could not start Tomcat server"
 

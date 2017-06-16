@@ -77,9 +77,6 @@ set_owner_and_group $GRAPHDB_PATH
 ################################################################################
 # Set up firewall
 
-# Previously, firewalld was used to open ports as a precaution.
-# Presently, we are assuming that the ports are open before installation.
-# In the future, we may replace the precautionary calls using iptables.
 # Make sure firewall is enabled and started.  Permanently open port 7200.
 #if [[ -z $IS_UPGRADE ]]; then
 #    print_green "Setting up Firewall..."

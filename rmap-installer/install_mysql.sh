@@ -17,19 +17,18 @@ ensure_service_stopped mariadb
 
 # Initial root password
 # TODO - This needs to come from somewhere
-oldrootpass="rmap"
-newrootpass=""
+PASSWORD=rmap
 
 # Perform a query without printing any text.
 quiet_query()
 {
-    mysql -u root --password=$oldrootpass -se "$1" &>> $LOGFILE
+    mysql -u root -p$PASSWORD -se "$1" &>> $LOGFILE
 }
 
 # Perform a query and print its reseults, suitable for assigning to a variable.
 value_query()
 {
-    echo `mysql -u root --password=$oldrootpass -se "$1" 2>> $LOGFILE`
+    echo `mysql -u root -p$PASSWORD -se "$1" 2>> $LOGFILE`
 }
 
 ################################################################################
@@ -46,24 +45,23 @@ systemctl enable mariadb &>> $LOGFILE \
 systemctl start mariadb &>> $LOGFILE \
     || abort "Could not start MariaDB server"
 
-# If databse "rmap" exists, this is an upgrade and no further work is needed.
-val=$(value_query "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = 'rmap';")
-if [[ $val == 'rmap' ]]; then
+# If the root user already has a password, this script was run before.
+mysql -u root -p$PASSWORD -se ";" &>> /dev/null
+if [[ $? == 0 ]]; then
     print_white "Done upgrading MySQL!"
     print_white "" # Blank line
 else
 
 ################################################################################
-# Secure the installation.
+# First time here - Secure the installation.
 # These commands are derived from /usr/bin/mysql_secure_installation.
 # They seem to work without complaint even if they were run before
 # (i.e. the things being deleted are no longer there).
 
     # Set the root password
     print_green "Setting root password..."
-    quiet_query "UPDATE mysql.user SET Password=PASSWORD('$newrootpass') WHERE User='root';" \
+    mysql -u root -se "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('$PASSWORD');" \
         || abort "Could not set root password"
-    # Note that with access established, the old password is OK for rest of script.
 
     # Delete the temporary user
     print_green "Deleting temporary user..."
@@ -85,7 +83,7 @@ else
         || abort "Could not delete test database"
 
 ################################################################################
-# Create initial database and user
+# First time here - Create initial database and user
 
     print_green "Creating 'rmap' database..."
     quiet_query "CREATE DATABASE rmap" \
@@ -98,7 +96,7 @@ else
     # TODO - Allow access from another IP address?
 
     print_green "Creating initial tables..."
-    cat createTables.sql | mysql -u root --password=$oldrootpass \
+    cat createTables.sql | mysql -u root --password=$PASSWORD \
         || abort "Could not create database tables"
 
     print_white "Done installing MySQL!"

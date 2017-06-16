@@ -12,17 +12,17 @@ RMAP_COMMON_INCLUDED=true
 # Component versions and locations
 
 # Java JDK
-# JDK_DIR=jdk1.8.0_91
-# JDK_ZIP=jdk-8u91-linux-x64.tar.gz
-# JDK_URI=http://download.oracle.com/otn-pub/java/jdk/8u91-b14/$JDK_ZIP
 JDK_DIR=jdk1.8.0_131
 JDK_ZIP=jdk-8u131-linux-x64.tar.gz
 JDK_URI=http://download.oracle.com/otn-pub/java/jdk/8u131-b11/d54c1d3a095b4ff2b6607d096fa80163/$JDK_ZIP
 
 #Tomcat
-TOMCAT_DIR=apache-tomcat-8.5.15
-TOMCAT_ZIP=apache-tomcat-8.5.15.tar.gz
-TOMCAT_URI=https://archive.apache.org/dist/tomcat/tomcat-8/v8.5.15/bin/$TOMCAT_ZIP
+TOMCAT_DIR=apache-tomcat-8.0.36
+TOMCAT_ZIP=apache-tomcat-8.0.36.tar.gz
+TOMCAT_URI=https://archive.apache.org/dist/tomcat/tomcat-8/v8.0.36/bin/$TOMCAT_ZIP
+#TOMCAT_DIR=apache-tomcat-8.5.15
+#TOMCAT_ZIP=apache-tomcat-8.5.15.tar.gz
+#TOMCAT_URI=https://archive.apache.org/dist/tomcat/tomcat-8/v8.5.15/bin/$TOMCAT_ZIP
 
 # GraphDB
 GRAPHDB_DIR=graphdb-free-8.0.6
