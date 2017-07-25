@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# Defines some variables and functions that are used by
-# other scripts in the RMap installer.
+# Other RMap installer scripts include this file to define variables and functions.
 # Calling this script directly will not install anything.
 
 # Only include this file once
@@ -17,9 +16,10 @@ JDK_ZIP=jdk-8u131-linux-x64.tar.gz
 JDK_URI=http://download.oracle.com/otn-pub/java/jdk/8u131-b11/d54c1d3a095b4ff2b6607d096fa80163/$JDK_ZIP
 
 #Tomcat
-TOMCAT_DIR=apache-tomcat-8.0.36
-TOMCAT_ZIP=apache-tomcat-8.0.36.tar.gz
-TOMCAT_URI=https://archive.apache.org/dist/tomcat/tomcat-8/v8.0.36/bin/$TOMCAT_ZIP
+TOMCAT_DIR=apache-tomcat-8.0.45
+TOMCAT_ZIP=apache-tomcat-8.0.45.tar.gz
+TOMCAT_URI=https://archive.apache.org/dist/tomcat/tomcat-8/v8.0.45/bin/$TOMCAT_ZIP
+# The 8.5.X versions caused problems, so we are sticking with the latest 8.0.X version.
 #TOMCAT_DIR=apache-tomcat-8.5.15
 #TOMCAT_ZIP=apache-tomcat-8.5.15.tar.gz
 #TOMCAT_URI=https://archive.apache.org/dist/tomcat/tomcat-8/v8.5.15/bin/$TOMCAT_ZIP
@@ -29,7 +29,7 @@ GRAPHDB_DIR=graphdb-free-8.0.6
 GRAPHDB_ZIP=graphdb-free-8.0.6-dist.zip
 GRAPHDB_URI=http://download.ontotext.com/owlim/6497f7fa-15e0-11e7-84d0-06278a02ff7a/$GRAPHDB_ZIP
 
-# MySQL
+# MariaDB
 DATABASE_NAME=rmap
 
 # NOID
@@ -53,6 +53,11 @@ TOMCAT_PATH=$PARENT_DIR/$TOMCAT_DIR
 GRAPHDB_PATH=$PARENT_DIR/$GRAPHDB_DIR
 NOID_PATH=$PARENT_DIR/$NOID_DIR
 
+LOGFILE=installer.log
+
+# Get the ID of the current user
+USERID=`logname`
+
 ###############################################################################
 # Printing and logging
 
@@ -62,9 +67,11 @@ G=`tput setaf 2`
 Y=`tput setaf 3`
 W=`tput sgr0`
 
-# Initialize the named log file to be empty
-LOGFILE=installer.log
+# Initialize the named log file to be empty and accessible
 echo -n "" > $LOGFILE
+chown $USERID $LOGFILE
+chgrp $USERID $LOGFILE
+chmod 664 $LOGFILE
 
 # Prints a message in green text and adds it to the log file
 function print_green
@@ -104,8 +111,15 @@ function print_white
 ###############################################################################
 # Other initialization
 
-# Get the ID of the current user
-USERID=`logname`
+# Prints an error message and the source file and line number, then exits.
+# The message string is the only parameter.
+function abort
+{
+    print_red "Aborting at line ${BASH_LINENO[0]} in script ${BASH_SOURCE[1]} due to error:"
+    print_red "   $1 ${W}"
+    print_red "   For details, see install log file " $LOGFILE
+    exit 1
+}
 
 # Get the IP Address of this computer
 IPADDR=`hostname -I 2>> $LOGFILE | tr -d '[:space:]'` \
@@ -116,11 +130,6 @@ print_green "Updating yum cache..."
 yum makecache fast &>> $LOGFILE \
     || abort "Could not update yum cache"
 
-# Set permissions on log file (file should exist and varables be set by now)
-chown $USERID $LOGFILE
-chgrp $USERID $LOGFILE
-chmod 664 $LOGFILE
-
 ###############################################################################
 # Utility functions
 
@@ -129,18 +138,10 @@ function confirm_sudo
 {
     # Verify that the script can sudo, or print message and quit
     if [[ $EUID -ne 0 ]]; then
-        print_red "This script must be run as root (sudo ./install_gaphdb.sh)"
+        index=${#BASH_SOURCE[@]}
+        print_red "This script must be run as root (sudo ${BASH_SOURCE[$index-1]})"
         exit 1
     fi
-}
-
-# Prints an error message and the source file and line number, then exits.
-# The message string is the only parameter.
-function abort
-{
-    print_red "Aborting at line ${BASH_LINENO[0]} in script ${BASH_SOURCE[1]} due to error:"
-    print_red "   $1 ${W}"
-    exit 1
 }
 
 # Install a CentOS package if it is not yet installed.

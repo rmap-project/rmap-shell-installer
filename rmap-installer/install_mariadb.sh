@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# This script installs a MySql server in support of an RMap server.
+# This script installs a MariaDB server in support of an RMap server.
 # The account used to run the script must have sudo privileges.
 
 # Only include this file once
-[[ -n "$RMAP_MYSQL_INCLUDED" ]] && return
-RMAP_MYSQL_INCLUDED=true
+[[ -n "$RMAP_MARIADB_INCLUDED" ]] && return
+RMAP_MARIADB_INCLUDED=true
 
 source install_common.sh
 
@@ -48,7 +48,7 @@ systemctl start mariadb &>> $LOGFILE \
 # If the root user already has a password, this script was run before.
 mysql -u root -p$PASSWORD -se ";" &>> /dev/null
 if [[ $? == 0 ]]; then
-    print_white "Done upgrading MySQL!"
+    print_white "Done upgrading MariaDB!"
     print_white "" # Blank line
 else
 
@@ -99,7 +99,7 @@ else
     cat createTables.sql | mysql -u root --password=$PASSWORD \
         || abort "Could not create database tables"
 
-    print_white "Done installing MySQL!"
+    print_white "Done installing MariaDB!"
     print_white "" # Blank line
 
 fi

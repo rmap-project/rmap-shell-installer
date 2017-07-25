@@ -134,7 +134,7 @@ print_green "Configuring RMap API web app..."
 sed "s,RMAPSERVERURL,$IPADDR," \
     < rmapapi.properties > $API_PROP_PATH/rmapapi.properties 2>> $LOGFILE \
         || abort "Could not modify RMap API properties file"
-sed "s,RMAPSERVERURL,$IPADDR,; s,MYSQLSERVERURL,$IPADDR,; s,DATABASENAME,$DATABASE_NAME," \
+sed "s,RMAPSERVERURL,$IPADDR,; s,MARIADBSERVERURL,$IPADDR,; s,DATABASENAME,$DATABASE_NAME," \
     < rmapauth.properties > $API_PROP_PATH/rmapauth.properties 2>> $LOGFILE \
         || abort "Could not modify RMap Authorization properties file"
 sed "s,GRAPHDBSERVERURL,$IPADDR," \
@@ -150,11 +150,10 @@ wget --no-verbose $RMAP_APP_URI 2>> $LOGFILE \
     || abort "Could not download RMap Account Manager web app"
 
 print_green "Installing RMap Account Manager web app..."
-# TODO - Instead, move this to "ROOT" and move "ROOT" to "tomcat"?
-mv $RMAP_APP_WAR $TOMCAT_PATH/webapps/app.war &>> $LOGFILE \
+mv $RMAP_APP_WAR $TOMCAT_PATH/webapps/ROOT.war &>> $LOGFILE \
     || abort "Could not install RMap Account Manager web app"
 # Wait for WAR file to be processed and "app" folder to be created
-APP_PROP_PATH=$TOMCAT_PATH/webapps/app/WEB-INF/classes
+APP_PROP_PATH=$TOMCAT_PATH/webapps/ROOT/WEB-INF/classes
 while [[ ! -d "$APP_PROP_PATH" ]]
 do
     sleep 1
@@ -165,7 +164,7 @@ print_green "Configuring RMap Account Management web app..."
 sed "s,RMAPSERVERURL,$IPADDR," \
     < rmapweb.properties > $APP_PROP_PATH/rmapweb.properties 2>> $LOGFILE \
         || abort "Could not modify RMap API properties file"
-sed "s,RMAPSERVERURL,$IPADDR,; s,MYSQLSERVERURL,$IPADDR," \
+sed "s,RMAPSERVERURL,$IPADDR,; s,MARIADBSERVERURL,$IPADDR,; s,DATABASENAME,$DATABASE_NAME," \
     < rmapauth.properties > $APP_PROP_PATH/rmapauth.properties 2>> $LOGFILE \
         || abort "Could not modify RMap Authorization properties file"
 sed "s,GRAPHDBSERVERURL,$IPADDR," \

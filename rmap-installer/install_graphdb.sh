@@ -23,6 +23,7 @@ ensure_service_stopped graphdb
 
 # If the graphdb folder already exists, move it aside.
 # Remember this is now an upgrade so data will be copied back after install.
+# TODO - Only do this if the version has changed - see install_tomcat.sh
 if [[ -d $GRAPHDB_PATH ]]; then
     print_green "Backing up graphdb data..."
     IS_UPGRADE=true

@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# Installs the Java JDK package from
-# the zip file that is included in the install package.
+# Installs the current Java JDK package in support of an RMap server.
 # The account used to run the script must have sudo privileges.
 
 # Only include this file once
@@ -40,3 +39,4 @@ if [[ ! -d $JAVA_PATH ]]; then
     print_white "" # Blank line
 fi
 
+# TODO - Remove any other versions of Java that were previously installed.

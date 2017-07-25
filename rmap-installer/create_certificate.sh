@@ -9,6 +9,7 @@
 # install_common.sh and other initialization is performed in install_tomcat.sh
 source install_tomcat.sh
 
+ensure_installed epel-release
 ensure_installed certbot
 
 # TODO - Have user supply domain name
@@ -38,7 +39,7 @@ fi
 
 # Generate a certificate by connecting to our (running) Tomcat server
 print_green "Generating certificate..."
-certbot certonly --webroot -w $TOMCAT_PATH/webapps/ROOT -d $DOMAIN \
+certbot certonly --webroot -w $TOMCAT_PATH/webapps/tomcat -d $DOMAIN \
     || abort "Failed to generate certificate"
 
 # Convert certificate to form needed to import into keystore
