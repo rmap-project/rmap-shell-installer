@@ -9,6 +9,8 @@ RMAP_JAVA_INCLUDED=true
 
 source install_common.sh
 
+print_bold_white "Installing Java:"
+
 confirm_sudo
 
 ensure_root_folder
@@ -17,8 +19,17 @@ ensure_installed wget
 
 ################################################################################
 
-# If JDK content doesn't exist, download and unzip it
-if [[ ! -d $JAVA_PATH ]]; then
+# Evaluate any previous version of Java (assume there could only be one)
+installed_version=`find /rmap -maxdepth 1 -name jdk*`
+
+if [[ $installed_version == $JAVA_PATH ]]; then
+    print_bold_white "Java installation is up to date"
+else
+    if [[ $installed_version != "" ]]; then
+        print_green "Deleting previous version..."
+        remove $installed_version
+    fi
+
     print_green "Downloading Java..."
     if [[ -f $JDK_ZIP ]]; then
         remove $JDK_ZIP
@@ -35,8 +46,8 @@ if [[ ! -d $JAVA_PATH ]]; then
     set_owner_and_group $JAVA_PATH \
         || abort "Could not set owner of JDK folder"
 
-    print_white "Done installing Java!"
-    print_white "" # Blank line
+    print_bold_white "Done installing Java!"
 fi
 
-# TODO - Remove any other versions of Java that were previously installed.
+print_white "" # Blank line
+

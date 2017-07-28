@@ -53,6 +53,10 @@ TOMCAT_PATH=$PARENT_DIR/$TOMCAT_DIR
 GRAPHDB_PATH=$PARENT_DIR/$GRAPHDB_DIR
 NOID_PATH=$PARENT_DIR/$NOID_DIR
 
+# Note - If this name changes, it must be changed in server.xml as well.
+KEYSTORE_FILE=RsaKeyStore.jks
+KEYSTORE_PATH=$TOMCAT_PATH/conf/$KEYSTORE_FILE
+
 LOGFILE=installer.log
 
 # Get the ID of the current user
@@ -66,6 +70,7 @@ R=`tput setaf 1`
 G=`tput setaf 2`
 Y=`tput setaf 3`
 W=`tput sgr0`
+BOLD=`tput bold`
 
 # Initialize the named log file to be empty and accessible
 echo -n "" > $LOGFILE
@@ -108,6 +113,13 @@ function print_white
     echo "${W}$1" >> $LOGFILE
 }
 
+# Prints a message in bold white text and adds it to the log file
+function print_bold_white
+{
+    echo "${W}${BOLD}$1${W}"
+    echo "${W}${BOLD}$1${W}" >> $LOGFILE
+}
+
 ###############################################################################
 # Other initialization
 
@@ -115,9 +127,9 @@ function print_white
 # The message string is the only parameter.
 function abort
 {
-    print_red "Aborting at line ${BASH_LINENO[0]} in script ${BASH_SOURCE[1]} due to error:"
+    print_red "Aborting at line ${BASH_LINENO[0]} in script '${BASH_SOURCE[1]}' due to error:"
     print_red "   $1 ${W}"
-    print_red "   For details, see install log file " $LOGFILE
+    print_red "   For details, see install log file '$LOGFILE'"
     exit 1
 }
 
@@ -129,6 +141,7 @@ IPADDR=`hostname -I 2>> $LOGFILE | tr -d '[:space:]'` \
 print_green "Updating yum cache..."
 yum makecache fast &>> $LOGFILE \
     || abort "Could not update yum cache"
+print_white "" # A blank line
 
 ###############################################################################
 # Utility functions
@@ -144,7 +157,7 @@ function confirm_sudo
     fi
 }
 
-# Install a CentOS package if it is not yet installed.
+# Install or update a named CentOS package.
 # The name of the package is the only parameter.
 function ensure_installed
 {
@@ -152,7 +165,14 @@ function ensure_installed
     if [[ `rpm -q $NAME` == "package $NAME is not installed" ]]; then
         print_green "Installing '$NAME'..."
         yum -y install $NAME &>> $LOGFILE \
-             || abort "Could not install $NAME"
+            || abort "Could not install $NAME"
+    else
+        yum check-update $NAME &>/dev/null
+        if [[ $? != 0 ]]; then
+            print_green "Updating '$NAME'..."
+            yum -y update $NAME &>> $LOGFILE \
+                || abort "Could not update $NAME"
+        fi
     fi
 }
 

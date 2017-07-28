@@ -13,67 +13,83 @@ RMAP_GRAPHDB_INCLUDED=true
 # install_common.sh and other initialization is performed in install_java.sh
 source install_java.sh
 
+print_bold_white "Installing GraphDB:"
+
 ensure_installed unzip
 
 ensure_service_stopped graphdb
 
-
 ################################################################################
 # GraphDB files
 
-# If the graphdb folder already exists, move it aside.
-# Remember this is now an upgrade so data will be copied back after install.
-# TODO - Only do this if the version has changed - see install_tomcat.sh
-if [[ -d $GRAPHDB_PATH ]]; then
-    print_green "Backing up graphdb data..."
-    IS_UPGRADE=true
-    BACKUP_PATH=$PARENT_DIR/$GRAPHDB_DIR.back
-    if [[ -d $BACKUP_PATH ]]; then
-        remove $BACKUP_PATH
-    fi
-    mv $GRAPHDB_PATH $BACKUP_PATH &>> $LOGFILE \
-        || abort "Could not rename GraphDB folder"
+# Determine install type:
+# There is either no previous installation (NEW),
+# or there is a previous version that must be replaced (UPGRADE),
+# or the current versios is already installed (NONE).
+# Assume there can only be one previous version.
+installed_version=`find /rmap -maxdepth 1 -name graphdb-free-* -not -name *.back`
+if [[ $installed_version == "" ]]; then
+    print_green "Will perform initial GraphDB installation."
+    INSTALL_TYPE=NEW
+elif [[ $installed_version != $GRAPHDB_PATH ]]; then
+    print_green "Will upgrade the GraphDB installation."
+    INSTALL_TYPE=UPGRADE
+else
+    print_green "GraphDB installation is up to date."
+    INSTALL_TYPE=NONE
 fi
 
-# Download GraphDB distribution file
-if [[ -f $GRAPHDB_ZIP ]]; then
+if [[ $INSTALL_TYPE != "NONE" ]]; then
+    # For upgrades, save the current GraphDB folder as a backup
+    if [[ $INSTALL_TYPE == "UPGRADE" ]]; then
+        print_green "Backing up graphdb data..."
+        BACKUP_PATH=$installed_version.back
+        if [[ -d $BACKUP_PATH ]]; then
+            remove $BACKUP_PATH
+        fi
+        mv $installed_version $BACKUP_PATH &>> $LOGFILE \
+            || abort "Could not rename GraphDB folder"
+    fi
+
+    # Download GraphDB distribution file
+    if [[ -f $GRAPHDB_ZIP ]]; then
+        remove $GRAPHDB_ZIP
+    fi
+    print_green "Downloading graphdb..."
+    wget --no-verbose $GRAPHDB_URI &>> $LOGFILE \
+        || abort "Could not download GraphDB"
+
+    # Unzip GraphDB distribution file and rename
+    print_green "Unzipping graphdb..."
+    unzip -q $GRAPHDB_ZIP -d $PARENT_DIR &>> $LOGFILE \
+        || abort "Could not unzip GraphDB"
     remove $GRAPHDB_ZIP
+
+    # If update install, move saved folders back
+    if [[ $INSTALL_TYPE == "UPGRADE" ]]; then
+        print_green "Restoring graphdb data..."
+        if [[ -f $BACKUP_PATH/data ]]; then
+            cp -r $BACKUP_PATH/data $GRAPHDB_PATH &>> $LOGFILE \
+                || abort "Could not restore GraphDB data"
+        fi
+        if [[ -f $BACKUP_PATH/logs ]]; then
+            cp -r $BACKUP_PATH/logs $GRAPHDB_PATH &>> $LOGFILE \
+                || abort "Could not restore GraphDB logs"
+        fi
+        if [[ -f $BACKUP_PATH/work ]]; then
+            cp -r $BACKUP_PATH/work $GRAPHDB_PATH &>> $LOGFILE \
+                || abort "Could not restore GraphDB work"
+        fi
+    fi
+
+    # Replace conf/graphdb.properties file to set data location
+    print_green "Configuring GraphDB..."
+    cp graphdb.properties $GRAPHDB_PATH/conf &>> $LOGFILE \
+        || abort "Could not install config file"
+
+    # The whole folder tree must have the correct ownership
+    set_owner_and_group $GRAPHDB_PATH
 fi
-print_green "Downloading graphdb..."
-wget --no-verbose $GRAPHDB_URI &>> $LOGFILE \
-    || abort "Could not download GraphDB"
-
-# Unzip GraphDB distribution file and rename
-print_green "Unzipping graphdb..."
-unzip -q $GRAPHDB_ZIP -d $PARENT_DIR &>> $LOGFILE \
-    || abort "Could not unzip GraphDB"
-remove $GRAPHDB_ZIP
-
-# If update install, move saved folders back
-if [[ -n $IS_UPGRADE ]]; then
-    print_green "Restoring graphdb data..."
-    if [[ -f $BACKUP_PATH/data ]]; then
-        cp -r $BACKUP_PATH/data $GRAPHDB_PATH &>> $LOGFILE \
-            || abort "Could not restore GraphDB data"
-    fi
-    if [[ -f $BACKUP_PATH/logs ]]; then
-        cp -r $BACKUP_PATH/logs $GRAPHDB_PATH &>> $LOGFILE \
-            || abort "Could not restore GraphDB logs"
-    fi
-    if [[ -f $BACKUP_PATH/work ]]; then
-        cp -r $BACKUP_PATH/work $GRAPHDB_PATH &>> $LOGFILE \
-            || abort "Could not restore GraphDB work"
-    fi
-fi
-
-# Replace conf/graphdb.properties file to set data location
-print_green "Configuring GraphDB..."
-cp graphdb.properties $GRAPHDB_PATH/conf &>> $LOGFILE \
-    || abort "Could not install config file"
-
-# The whole folder tree must have the correct ownership
-set_owner_and_group $GRAPHDB_PATH
-
 
 ################################################################################
 # Set up firewall
@@ -92,7 +108,6 @@ set_owner_and_group $GRAPHDB_PATH
 #    firewall-cmd --reload &>> $LOGFILE \
 #        || abort "Could not reload firewall settings"
 #fi
-
 
 ################################################################################
 # GraphDB as a Service
@@ -121,7 +136,6 @@ do
         $RESTAPI/security 2>> $LOGFILE )
 done
 print_white ""
-
 
 ################################################################################
 # Initial server configuration
@@ -177,9 +191,9 @@ EOF
 fi
 
 if [[ -z $IS_UPGRADE ]]; then
-    print_white "Done installing GraphDB!"
+    print_bold_white "Done installing GraphDB!"
 else
-    print_white "Done upgrading GraphDB!"
+    print_bold_white "Done upgrading GraphDB!"
 fi
 echo # A blank line
 

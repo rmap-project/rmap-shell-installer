@@ -10,8 +10,12 @@ RMAP_TOMCAT_INCLUDED=true
 # install_common.sh and other initialization is performed in install_java.sh
 source install_java.sh
 
-ensure_service_stopped tomcat
+# Read user configuration settings
+source configuration.sh
 
+print_bold_white "Installing Tomcat:"
+
+ensure_service_stopped tomcat
 
 ################################################################################
 # Determine install type
@@ -20,16 +24,15 @@ ensure_service_stopped tomcat
 # or the installed version is the current version (REFRESH)
 # or there is a previous version that must be replaced (UPGRADE).
 # Assume there can only be one previous version.
-print_green "Checking for installed Tomcat..."
-installed_version=`find /rmap -name apache-tomcat-* -not -name *.back`
+installed_version=`find /rmap -maxdepth 1 -name apache-tomcat-* -not -name *.back`
 if [[ $installed_version == "" ]]; then
-    print_green "Performing new Tomcat installation..."
+    print_green "Will perform initial Tomcat installation."
     INSTALL_TYPE=NEW
 elif [[ $installed_version == $TOMCAT_PATH ]]; then
-    print_green "Refreshing the Tomcat installation..."
+    print_green "Will refresh the Tomcat installation."
     INSTALL_TYPE=REFRESH
 else
-    print_green "Upgrading the Tomcat installation..."
+    print_green "Will upgrade the Tomcat installation."
     INSTALL_TYPE=UPGRADE
 fi
 
@@ -68,8 +71,9 @@ fi
 
 # Configure Tomcat
 print_green "Configuring Tomcat..."
-cp server.xml $TOMCAT_PATH/conf &>> $LOGFILE \
-    || abort "Could not install config file"
+sed "s,KEYSTORE_FILE,$KEYSTORE_FILE,; s,KEYSTORE_PASSWORD,$KEYSTORE_PASSWORD," \
+    < server.xml > $TOMCAT_PATH/conf/server.xml 2>> $LOGFILE \
+        || abort "Could not install config file"
 cp catalina.properties $TOMCAT_PATH/conf &>> $LOGFILE \
     || abort "Could not install properties file"
 
@@ -77,8 +81,9 @@ cp catalina.properties $TOMCAT_PATH/conf &>> $LOGFILE \
 if [[ $INSTALL_TYPE == "UPGRADE" ]]; then
     print_green "Restoring Tomcat data..."
     # SSL keystore
-    if [[ -f $BACKUP_PATH/conf/localhost-rsa.jks ]]; then
-        cp -r $BACKUP_PATH/conf/localhost-rsa.jks $TOMCAT_PATH/conf &>> $LOGFILE \
+    OLD_KEYSTORE_PATH=$BACKUP_PATH/conf/$KEYSTORE_FILE
+    if [[ -f $OLD_KEYSTORE_PATH ]]; then
+        cp -r $OLD_KEYSTORE_PATH $KEYSTORE_PATH &>> $LOGFILE \
             || abort "Could not restore Tomcat SSL keystore"
     fi
 fi
@@ -159,11 +164,11 @@ print_white ""
 # TODO - Do we want to configure an admin user here?
 
 if [[ $INSTALL_TYPE == "NEW" ]]; then
-    print_white "Done installing Tomcat!"
+    print_bold_white "Done installing Tomcat!"
 elif [[ $INSTALL_TYPE == "REFRESH" ]]; then
-    print_white "Done refreshing Tomcat!"
+    print_bold_white "Done refreshing Tomcat!"
 else
-    print_white "Done upgrading Tomcat!"
+    print_bold_white "Done upgrading Tomcat!"
 fi
-echo # A blank line
+print_white "" # A blank line
 

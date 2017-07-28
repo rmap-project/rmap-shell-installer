@@ -9,6 +9,8 @@ RMAP_MARIADB_INCLUDED=true
 
 source install_common.sh
 
+print_bold_white "Installing MariaDB:"
+
 confirm_sudo
 
 ensure_root_folder
@@ -19,13 +21,13 @@ ensure_service_stopped mariadb
 # TODO - This needs to come from somewhere
 PASSWORD=rmap
 
-# Perform a query without printing any text.
+# Perform a MySQL query without printing any text.
 quiet_query()
 {
     mysql -u root -p$PASSWORD -se "$1" &>> $LOGFILE
 }
 
-# Perform a query and print its reseults, suitable for assigning to a variable.
+# Perform a MySQL query and print its reseults, suitable for assigning to a variable.
 value_query()
 {
     echo `mysql -u root -p$PASSWORD -se "$1" 2>> $LOGFILE`
@@ -48,7 +50,7 @@ systemctl start mariadb &>> $LOGFILE \
 # If the root user already has a password, this script was run before.
 mysql -u root -p$PASSWORD -se ";" &>> /dev/null
 if [[ $? == 0 ]]; then
-    print_white "Done upgrading MariaDB!"
+    print_bold_white "Done upgrading MariaDB!"
     print_white "" # Blank line
 else
 
@@ -99,7 +101,7 @@ else
     cat createTables.sql | mysql -u root --password=$PASSWORD \
         || abort "Could not create database tables"
 
-    print_white "Done installing MariaDB!"
+    print_bold_white "Done installing MariaDB!"
     print_white "" # Blank line
 
 fi
