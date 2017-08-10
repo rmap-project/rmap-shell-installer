@@ -31,6 +31,8 @@ GRAPHDB_URI=http://download.ontotext.com/owlim/6497f7fa-15e0-11e7-84d0-06278a02f
 
 # MariaDB
 DATABASE_NAME=rmap
+MARIA_LIB_FILE=mariadb-java-client-2.0.3.jar
+MARIA_LIB_URL=https://downloads.mariadb.com/Connectors/java/connector-java-2.0.3/$MARIA_LIB_FILE
 
 # NOID
 NOID_DIR=Noid-0.424
@@ -38,11 +40,14 @@ NOID_ZIP=Noid-0.424.tar.gz
 NOID_URI=http://search.cpan.org/CPAN/authors/id/J/JA/JAK/$NOID_ZIP
 
 # RMAP
-RMAP_API_WAR=rmap-api-1.0.0-beta.war
-RMAP_APP_WAR=rmap-webapp-1.0.0-beta.war
-RMAP_DOWNLOAD=https://github.com/rmap-project/rmap/releases/download/v1.0.0-beta
-RMAP_API_URI=$RMAP_DOWNLOAD/$RMAP_API_WAR
-RMAP_APP_URI=$RMAP_DOWNLOAD/$RMAP_APP_WAR
+# RMAP_API_WAR=rmap-api-1.0.0-beta.war
+# RMAP_APP_WAR=rmap-webapp-1.0.0-beta.war
+# RMAP_DOWNLOAD=https://github.com/rmap-project/rmap/releases/download/v1.0.0-beta
+# RMAP_API_URI=$RMAP_DOWNLOAD/$RMAP_API_WAR
+# RMAP_APP_URI=$RMAP_DOWNLOAD/$RMAP_APP_WAR
+RMAP_API_VERSION=rmap-api-1.0.1-beta-SNAPSHOT
+RMAP_API_URI="https://drive.google.com/uc?export=download&id=0B9klf6ZJ3Q3lM2JLNWlWV21RUzA"
+RMAP_APP_URI="https://drive.google.com/uc?export=download&id=0B9klf6ZJ3Q3lNEdPZ2J1dkR2QTQ"
 
 # Installation folder
 PARENT_DIR=/rmap
@@ -52,6 +57,8 @@ JAVA_PATH=$PARENT_DIR/$JDK_DIR
 TOMCAT_PATH=$PARENT_DIR/$TOMCAT_DIR
 GRAPHDB_PATH=$PARENT_DIR/$GRAPHDB_DIR
 NOID_PATH=$PARENT_DIR/$NOID_DIR
+RMAP_PROPS_FOLDER=$PARENT_DIR/properties
+RMAP_PROPS_FILE=rmap.properties
 
 # Note - If this name changes, it must be changed in server.xml as well.
 KEYSTORE_FILE=RsaKeyStore.jks

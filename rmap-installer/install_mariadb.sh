@@ -85,7 +85,7 @@ else
         || abort "Could not delete test database"
 
 ################################################################################
-# First time here - Create initial database and user
+# First time here - Create initial database and user privileges
 
     print_green "Creating 'rmap' database..."
     quiet_query "CREATE DATABASE rmap" \
@@ -95,7 +95,11 @@ else
     quiet_query "GRANT ALL PRIVILEGES ON rmap.* TO 'rmap'@'localhost' \
         IDENTIFIED BY 'rmap';" \
             || abort "Could not grant access to user 'rmap'"
-    # TODO - Allow access from another IP address?
+    # TODO - Requests coming from 'rmap'@'this-system's-IP' should work,
+    # but it seems necessary to allow access from all IP addresses:
+    quiet_query "GRANT ALL PRIVILEGES ON rmap.* TO 'rmap'@'%' \
+        IDENTIFIED BY 'rmap';" \
+            || abort "Could not grant access to user 'rmap'"
 
     print_green "Creating initial tables..."
     cat createTables.sql | mysql -u root --password=$PASSWORD \

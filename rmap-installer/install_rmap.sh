@@ -130,14 +130,42 @@ if [[ $INSTALL_TYPE != "NONE" ]]; then
 fi
 
 ################################################################################
+# RMap Configuration
+
+print_green "Configuring RMap API and Account Manager web apps..."
+# Make sure there is a properties folder
+if [[ ! -d $RMAP_PROPS_FOLDER ]]; then
+    mkdir $RMAP_PROPS_FOLDER &>> $LOGFILE \
+        || abort "Could not create RMap properties folder"
+fi
+
+# TODO - Decide if this should be $IPADDR, $DOMAIN_NAME or "localhost"
+URL=$DOMAIN_NAME
+sed " \
+    s,RMAPSERVERURL,$URL,; \
+    s,MARIADBSERVERURL,$URL,; \
+    s,DATABASENAME,$DATABASE_NAME,; \
+    s,GRAPHDBSERVERURL,$URL,; \
+    s,GOOGLEOAUTHKEY,$GOOGLE_OAUTH_KEY,; \
+    s,GOOGLEOAUTHSECRET,$GOOGLE_OAUTH_SECRET,; \
+    " \
+    < $RMAP_PROPS_FILE > $RMAP_PROPS_FOLDER/$RMAP_PROPS_FILE 2>> $LOGFILE \
+        || abort "Could not create RMap configuration file"
+
+################################################################################
 # RMap API
 
+# TODO - Read version property from API POM file (if it exists):
+#     /rmap/apache*/webapps/api/META_INF/maven/info.rmapproject/rmap-api/pom.properties
+# Compare it to value in $RMAP_API_VERSION
+# Install if file doesn't exist or if version is different.
+
 print_green "Downloading RMap API web app..."
-wget --no-verbose $RMAP_API_URI 2>> $LOGFILE \
+wget --no-verbose $RMAP_API_URI -O api.war 2>> $LOGFILE \
     || abort "Could not download RMap API web app"
 
 print_green "Installing RMap API web app..."
-mv $RMAP_API_WAR $TOMCAT_PATH/webapps/api.war &>> $LOGFILE \
+mv api.war $TOMCAT_PATH/webapps &>> $LOGFILE \
     || abort "Could not install RMap API web app"
 # Wait for WAR file to be processed and "api" folder to be created
 API_PROP_PATH=$TOMCAT_PATH/webapps/api/WEB-INF/classes
@@ -146,26 +174,15 @@ do
     sleep 1
 done
 
-print_green "Configuring RMap API web app..."
-sed "s,RMAPSERVERURL,$IPADDR," \
-    < rmapapi.properties > $API_PROP_PATH/rmapapi.properties 2>> $LOGFILE \
-        || abort "Could not modify RMap API properties file"
-sed "s,RMAPSERVERURL,$IPADDR,; s,MARIADBSERVERURL,$IPADDR,; s,DATABASENAME,$DATABASE_NAME," \
-    < rmapauth.properties > $API_PROP_PATH/rmapauth.properties 2>> $LOGFILE \
-        || abort "Could not modify RMap Authorization properties file"
-sed "s,GRAPHDBSERVERURL,$IPADDR," \
-    < rmapcore.properties > $API_PROP_PATH/rmapcore.properties 2>> $LOGFILE \
-        || abort "Could not modify RMap Core properties file" 
-
 ################################################################################
 # RMap Account Manager
 
 print_green "Downloading RMap Account Manager web app..."
-wget --no-verbose $RMAP_APP_URI 2>> $LOGFILE \
+wget --no-verbose $RMAP_APP_URI -O app.war 2>> $LOGFILE \
     || abort "Could not download RMap Account Manager web app"
 
 print_green "Installing RMap Account Manager web app..."
-mv $RMAP_APP_WAR $TOMCAT_PATH/webapps/ROOT.war &>> $LOGFILE \
+mv app.war $TOMCAT_PATH/webapps/ROOT.war &>> $LOGFILE \
     || abort "Could not install RMap Account Manager web app"
 # Wait for WAR file to be processed and "app" folder to be created
 APP_PROP_PATH=$TOMCAT_PATH/webapps/ROOT/WEB-INF/classes
@@ -173,18 +190,6 @@ while [[ ! -d "$APP_PROP_PATH" ]]
 do
     sleep 1
 done
-
-print_green "Configuring RMap Account Management web app..."
-# TODO - Manage OAuth stuff here.
-sed "s,RMAPSERVERURL,$IPADDR," \
-    < rmapweb.properties > $APP_PROP_PATH/rmapweb.properties 2>> $LOGFILE \
-        || abort "Could not modify RMap API properties file"
-sed "s,RMAPSERVERURL,$IPADDR,; s,MARIADBSERVERURL,$IPADDR,; s,DATABASENAME,$DATABASE_NAME," \
-    < rmapauth.properties > $APP_PROP_PATH/rmapauth.properties 2>> $LOGFILE \
-        || abort "Could not modify RMap Authorization properties file"
-sed "s,GRAPHDBSERVERURL,$IPADDR," \
-    < rmapcore.properties > $APP_PROP_PATH/rmapcore.properties 2>> $LOGFILE \
-        || abort "Could not modify RMap Core properties file" 
 
 ################################################################################
 # Finalization

@@ -27,3 +27,13 @@ KEYSTORE_PASSWORD=rmaprmap
 CERTIFICATE_PATH=./rmap.pfx
 KEY_NAME=tomcat
 KEY_PASSWORD=rmaprmap
+
+################################################################################
+
+# Information about the OAuth credentials that will be used to allow new users
+# to register themselves with the RMap server.
+
+# The Google OAuth account must authorize https://[yourdomain]/user/googlecallback.
+GOOGLE_OAUTH_KEY=955897092185-0ipd5rsij456ujd6grsi0t00vd0q538p.apps.googleusercontent.com
+GOOGLE_OAUTH_SECRET=VJ8IoffrycdlkhEtEVUUXq_5
+

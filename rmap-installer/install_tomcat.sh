@@ -66,6 +66,11 @@ if [[ $INSTALL_TYPE != "REFRESH" ]]; then
     # Move Tomcat from root URL to /tomcat.  RMap app will be installed at root.
     mv $TOMCAT_PATH/webapps/ROOT $TOMCAT_PATH/webapps/tomcat
     remove $TOMCAT_ZIP
+
+    # Add library for MariaDB integration
+    wget --no-verbose $MARIA_LIB_URL -O $TOMCAT_PATH/lib/$MARIA_LIB_FILE &>> $LOGFILE \
+        || abort "Could not download MariaDB library"
+
     set_owner_and_group $TOMCAT_PATH
 fi
 
@@ -74,7 +79,8 @@ print_green "Configuring Tomcat..."
 sed "s,KEYSTORE_FILE,$KEYSTORE_FILE,; s,KEYSTORE_PASSWORD,$KEYSTORE_PASSWORD," \
     < server.xml > $TOMCAT_PATH/conf/server.xml 2>> $LOGFILE \
         || abort "Could not install config file"
-cp catalina.properties $TOMCAT_PATH/conf &>> $LOGFILE \
+sed "s,RMAP_PROPS_FILE,$RMAP_PROPS_FOLDER/$RMAP_PROPS_FILE," \
+    < catalina.properties > $TOMCAT_PATH/conf/catalina.properties 2>> $LOGFILE \
     || abort "Could not install properties file"
 
 # If update install, restore some saved content
@@ -107,23 +113,24 @@ if [[ $INSTALL_TYPE == "NEW" ]]; then
         || abort "Could not enable iptables"
     systemctl start iptables &>> $LOGFILE \
         || abort "Could not start iptables"
-    iptables -F \
-        || abort "Could not flush iptables rules"
-    iptables -t nat -I PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8080 \
-        &>> $LOGFILE \
-        || abort "Could not forward port 80 to 8080"
-    iptables -t nat -I OUTPUT -p tcp -o lo --dport 80 -j REDIRECT --to-ports 8080 \
-        &>> $LOGFILE \
-        || abort "Could not forward port 80 to 8080"
-    iptables -t nat -I PREROUTING -p tcp --dport 443 -j REDIRECT --to-port 8443 \
-        &>> $LOGFILE \
-        || abort "Could not forward port 443 to 8443"
-    iptables -t nat -I OUTPUT -p tcp -o lo --dport 443 -j REDIRECT --to-ports 8443 \
-        &>> $LOGFILE \
-        || abort "Could not forward port 443 to 8443"
-    service iptables save &>> $LOGFILE \
-        || "Could not save iptables settings"
 fi
+
+iptables -F \
+    || abort "Could not flush iptables rules"
+iptables -t nat -I PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8080 \
+    &>> $LOGFILE \
+    || abort "Could not forward port 80 to 8080"
+iptables -t nat -I OUTPUT -p tcp -o lo --dport 80 -j REDIRECT --to-ports 8080 \
+    &>> $LOGFILE \
+    || abort "Could not forward port 80 to 8080"
+iptables -t nat -I PREROUTING -p tcp --dport 443 -j REDIRECT --to-port 8443 \
+    &>> $LOGFILE \
+    || abort "Could not forward port 443 to 8443"
+iptables -t nat -I OUTPUT -p tcp -o lo --dport 443 -j REDIRECT --to-ports 8443 \
+    &>> $LOGFILE \
+    || abort "Could not forward port 443 to 8443"
+service iptables save &>> $LOGFILE \
+    || "Could not save iptables settings"
 
 
 ################################################################################
