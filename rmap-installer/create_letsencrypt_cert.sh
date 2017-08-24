@@ -35,7 +35,7 @@ mkdir $ROOT
 
 # Generate a certificate via the Tomcat server
 print_green "Generating certificate..."
-certbot certonly --webroot -w $ROOT -d $DOMAIN_NAME \
+certbot certonly --webroot -w $ROOT -d $TOMCAT_DOMAIN_NAME \
     || abort "Failed to generate certificate"
 
 # Clean up the ROOT folder
@@ -46,7 +46,7 @@ fi
 
 # Convert certificate to PKCS12 format (needed to import into keystore)
 print_green "Converting certificate..."
-LE_PATH=/etc/letsencrypt/live/$DOMAIN_NAME
+LE_PATH=/etc/letsencrypt/live/$TOMCAT_DOMAIN_NAME
 openssl pkcs12 -export \
     -in      $LE_PATH/fullchain.pem \
     -inkey   $LE_PATH/privkey.pem \

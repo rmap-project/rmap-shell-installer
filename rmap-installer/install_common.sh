@@ -1,6 +1,8 @@
 #!/bin/bash
 
 # Other RMap installer scripts include this file to define variables and functions.
+# These definitions should NOT be changed by users who are installing RMap.
+# Only the definitions and configuration.sh should be changed by users.
 # Calling this script directly will not install anything.
 
 # Only include this file once
@@ -30,7 +32,6 @@ GRAPHDB_ZIP=graphdb-free-8.0.6-dist.zip
 GRAPHDB_URI=http://download.ontotext.com/owlim/6497f7fa-15e0-11e7-84d0-06278a02ff7a/$GRAPHDB_ZIP
 
 # MariaDB
-DATABASE_NAME=rmap
 MARIA_LIB_FILE=mariadb-java-client-2.0.3.jar
 MARIA_LIB_URL=https://downloads.mariadb.com/Connectors/java/connector-java-2.0.3/$MARIA_LIB_FILE
 
@@ -40,6 +41,7 @@ NOID_ZIP=Noid-0.424.tar.gz
 NOID_URI=http://search.cpan.org/CPAN/authors/id/J/JA/JAK/$NOID_ZIP
 
 # RMAP
+# TODO - Place copies of the latest SNAPSHOT WAR files on GitHub.
 # RMAP_API_WAR=rmap-api-1.0.0-beta.war
 # RMAP_APP_WAR=rmap-webapp-1.0.0-beta.war
 # RMAP_DOWNLOAD=https://github.com/rmap-project/rmap/releases/download/v1.0.0-beta
@@ -239,3 +241,19 @@ function ensure_service_stopped
     fi
 }
 
+# Tests a URL once a second in a loop and prints a period each iteration.
+# Returns when the URL has been reached.  Used to determine when Tomcat is
+# finished coming up or when new components have been recognized and installed.
+# Inappropriate use could result in the install script hanging here. 
+function wait_for_url
+{
+    status=1
+    while [[ $status != 0 ]]
+    do
+        print_yellow_noeol "."
+        sleep 1
+        wget -O /dev/null -T 1 $1 &>> $LOGFILE
+        status=$?
+    done
+    print_white ""
+}

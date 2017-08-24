@@ -24,7 +24,7 @@ ensure_service_stopped tomcat
 # or the installed version is the current version (REFRESH)
 # or there is a previous version that must be replaced (UPGRADE).
 # Assume there can only be one previous version.
-installed_version=`find /rmap -maxdepth 1 -name apache-tomcat-* -not -name *.back`
+installed_version=`find $PARENT_DIR -maxdepth 1 -name apache-tomcat-* -not -name *.back`
 if [[ $installed_version == "" ]]; then
     print_green "Will perform initial Tomcat installation."
     INSTALL_TYPE=NEW
@@ -99,24 +99,39 @@ fi
 # Set up firewall
 
 # For new intalls, initialize some firewall functionality:
-#   Make sure iptables is enabled and started.
-#   Forward default HTTP and HTTPS ports to Tomcat's ports.
-#   Save settings for use when iptables restarts.
-# Starting the service can add some unwanted rules to the tables,
-# so flush all rules after starting.
-#   WARNING: This may disrupt systems with existing rules!
-
+#   Make sure firewalld is disabled and iptables is enabled and started.
 if [[ $INSTALL_TYPE == "NEW" ]]; then
     ensure_installed iptables-services
     print_green "Setting up Firewall..."
+    systemctl disable firewalld &>> $LOGFILE \
+        || abort "Could not disable firewalld"
     systemctl enable iptables &>> $LOGFILE \
         || abort "Could not enable iptables"
     systemctl start iptables &>> $LOGFILE \
         || abort "Could not start iptables"
 fi
 
+# For each update, refresh the firewall settings:
+#   Clear out any rules that might mess up our efforts.
+#   Open and forward default HTTP and HTTPS ports to Tomcat's ports.
+#   Open the HTTPS port (this may not be strictly needed).
+#   Save settings for use when iptables restarts.
+# WARNING: This may disrupt systems with existing rules!
+print_green "Configuring Firewall..."
 iptables -F \
-    || abort "Could not flush iptables rules"
+    || abort "Could not flush iptables rule chains"
+iptables -X \
+    || abort "Could not flush iptables rule chains"
+iptables -t nat -F \
+    || abort "Could not flush iptables rule chains"
+iptables -t nat -X \
+    || abort "Could not flush iptables rule chains"
+iptables -t nat -A INPUT -p tcp --dport 80 -j ACCEPT \
+    &>> $LOGFILE \
+    || abort "Could not open port 80"
+iptables -t nat -A INPUT -p tcp --dport 443 -j ACCEPT \
+    &>> $LOGFILE \
+    || abort "Could not open port 443"
 iptables -t nat -I PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8080 \
     &>> $LOGFILE \
     || abort "Could not forward port 80 to 8080"
@@ -152,18 +167,9 @@ print_green "Starting Tomcat service..."
 systemctl start tomcat &>> $LOGFILE \
     || abort "Could not start Tomcat server"
 
-# Wait for GraphDB to become responsive
+# Wait for Tomcat to become responsive
 print_yellow_noeol "Starting Tomcat (this can take several seconds)"
-status=1
-while [[ $status != 0 ]]
-do
-    print_yellow_noeol "."
-    sleep 1
-    curl -m 1 http://$IPADDR:8080 > /dev/null 2>> $LOGFILE
-    status=$?
-done
-print_white ""
-
+wait_for_url "http://$TOMCAT_DOMAIN_NAME/tomcat"
 
 ################################################################################
 # Configure server

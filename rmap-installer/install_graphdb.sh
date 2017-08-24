@@ -92,24 +92,6 @@ if [[ $INSTALL_TYPE != "NONE" ]]; then
 fi
 
 ################################################################################
-# Set up firewall
-
-# Make sure firewall is enabled and started.  Permanently open port 7200.
-#if [[ -z $IS_UPGRADE ]]; then
-#    print_green "Setting up Firewall..."
-#    systemctl enable firewalld &>> $LOGFILE \
-#        || abort "Could not enable firewall"
-#    systemctl start firewalld &>> $LOGFILE \
-#        || abort "Could not start firewall"
-#    if [[ `firewall-cmd --list-ports | grep 7200 | wc -l` == 0 ]]; then
-#        firewall-cmd --zone=public --permanent --add-port=7200/tcp &>> $LOGFILE \
-#            || abort "Could not open port 7200"
-#    fi
-#    firewall-cmd --reload &>> $LOGFILE \
-#        || abort "Could not reload firewall settings"
-#fi
-
-################################################################################
 # GraphDB as a Service
 
 # Create and start a service for GraphDB
@@ -143,13 +125,13 @@ print_white ""
 # If we are upgrading, do not initialize the repo, user or security
 if [[ -z $IS_UPGRADE ]]; then
     # Create configured rmap repo via web API
-    print_green "Creating 'rmap' repository..."
+    print_green "Creating initial repository..."
     curl -X POST \
         $RESTAPI/repositories \
         -H 'Content-Type: multipart/form-data' \
         -F "config=@rmap-config.ttl" \
         &>> $LOGFILE \
-            || abort "Could not create GraphDB repository 'rmap'"
+            || abort "Could not create initial GraphDB repository '$GRAPHDB_DBNAME'"
 
     # Create rmap user via web API
     # TODO - Move JSON to file so we can catch stdout/stderr in log file?
@@ -160,16 +142,14 @@ if [[ -z $IS_UPGRADE ]]; then
         -H 'Accept: text/plain' \
         -d @- &>> $LOGFILE << EOF
         {
-            "username": "rmap",
-            "password": "rmap",
-            "confirmpassword": "rmap",
+            "username": "$GRAPHDB_USER",
+            "password": "$GRAPHDB_PASSWORD",
+            "confirmpassword": "$GRAPHDB_PASSWORD",
             "grantedAuthorities": ["ROLE_USER", "ROLE_REPO_ADMIN"]
         }
 EOF
     [[ $? ]] \
-        || abort "Could not create GraphDB user 'rmap'"
-    print_yellow "   The initial password for GraphDB user 'rmap' is 'rmap'."
-    print_yellow "   Use the GraphDB Workbench (http://$IPADDR:7200) to change the password"
+        || abort "Could not create GraphDB user '$GRAPHDB_USER'"
 
     # Turn security on via web API
     print_green "Adjusting security settings..."

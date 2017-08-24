@@ -113,6 +113,7 @@ if [[ $INSTALL_TYPE != "NONE" ]]; then
         || abort "NOID minter failed initial test"
 
     # Create the NOID web service
+    # TODO - Need to also do this when Tomcat is deleted and reinstalled.
     print_green "Creating NOID web service..."
     pushd $TOMCAT_PATH/webapps &>> $LOGFILE
     wget https://github.com/rmap-project/rmap/releases/download/v1.0.0-beta/noid.war \
@@ -139,18 +140,23 @@ if [[ ! -d $RMAP_PROPS_FOLDER ]]; then
         || abort "Could not create RMap properties folder"
 fi
 
-# TODO - Decide if this should be $IPADDR, $DOMAIN_NAME or "localhost"
-URL=$DOMAIN_NAME
+# TODO - If MARIADB or GRAPHDB domain names are same as TOMCAT's, use "localhost"?
 sed " \
-    s,RMAPSERVERURL,$URL,; \
-    s,MARIADBSERVERURL,$URL,; \
-    s,DATABASENAME,$DATABASE_NAME,; \
-    s,GRAPHDBSERVERURL,$URL,; \
+    s,RMAPSERVERURL,$TOMCAT_DOMAIN_NAME,; \
+    s,MARIADBSERVERURL,$MARIADB_DOMAIN_NAME,; \
+    s,MARIADBDBNAME,$MARIADB_DBNAME,; \
+    s,MARIADBUSER,$MARIADB_USER,; \
+    s,MARIADBPASSWORD,$MARIADB_PASSWORD,; \
+    s,GRAPHDBSERVERURL,$GRAPHDB_DOMAIN_NAME,; \
+    s,GRAPHDBDBNAME,$GRAPHDB_DBNAME,; \
+    s,GRAPHDBUSER,$GRAPHDB_USER,; \
+    s,GRAPHDBPASSWORD,$GRAPHDB_PASSWORD,; \
     s,GOOGLEOAUTHKEY,$GOOGLE_OAUTH_KEY,; \
     s,GOOGLEOAUTHSECRET,$GOOGLE_OAUTH_SECRET,; \
     " \
     < $RMAP_PROPS_FILE > $RMAP_PROPS_FOLDER/$RMAP_PROPS_FILE 2>> $LOGFILE \
         || abort "Could not create RMap configuration file"
+set_owner_and_group $RMAP_PROPS_FOLDER
 
 ################################################################################
 # RMap API
@@ -168,11 +174,8 @@ print_green "Installing RMap API web app..."
 mv api.war $TOMCAT_PATH/webapps &>> $LOGFILE \
     || abort "Could not install RMap API web app"
 # Wait for WAR file to be processed and "api" folder to be created
-API_PROP_PATH=$TOMCAT_PATH/webapps/api/WEB-INF/classes
-while [[ ! -d "$API_PROP_PATH" ]]
-do
-    sleep 1
-done
+print_yellow_noeol "Waiting for the RMap API (this can take several seconds)"
+wait_for_url "http://$TOMCAT_DOMAIN_NAME/api/discos"
 
 ################################################################################
 # RMap Account Manager
@@ -185,11 +188,8 @@ print_green "Installing RMap Account Manager web app..."
 mv app.war $TOMCAT_PATH/webapps/ROOT.war &>> $LOGFILE \
     || abort "Could not install RMap Account Manager web app"
 # Wait for WAR file to be processed and "app" folder to be created
-APP_PROP_PATH=$TOMCAT_PATH/webapps/ROOT/WEB-INF/classes
-while [[ ! -d "$APP_PROP_PATH" ]]
-do
-    sleep 1
-done
+print_yellow_noeol "Waiting for the RMap Account Manager (this can take several seconds)"
+wait_for_url "http://$TOMCAT_DOMAIN_NAME"
 
 ################################################################################
 # Finalization
