@@ -9,7 +9,7 @@
 # "localhost" is a valid name for the GRAPHDB and MARIADB domains if they
 # are running on the same system as the Tomcat component.
 TOMCAT_DOMAIN_NAME=rmap2.trumbore.com
-GRAPHDB_DOMAIN_NAME=localhost
+GRAPHDB_DOMAIN_NAME=rmap.trumbore.com
 MARIADB_DOMAIN_NAME=localhost
 
 ################################################################################

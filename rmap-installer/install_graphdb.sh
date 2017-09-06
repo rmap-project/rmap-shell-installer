@@ -13,6 +13,9 @@ RMAP_GRAPHDB_INCLUDED=true
 # install_common.sh and other initialization is performed in install_java.sh
 source install_java.sh
 
+# Read user configuration settings
+source configuration.sh
+
 print_bold_white "Installing GraphDB:"
 
 ensure_installed unzip
@@ -127,46 +130,50 @@ if [[ -z $IS_UPGRADE ]]; then
     # Create configured rmap repo via web API
     print_green "Creating initial repository..."
     curl -X POST \
-        $RESTAPI/repositories \
+        -u admin:root \
         -H 'Content-Type: multipart/form-data' \
         -F "config=@rmap-config.ttl" \
+        $RESTAPI/repositories \
         &>> $LOGFILE \
             || abort "Could not create initial GraphDB repository '$GRAPHDB_DBNAME'"
 
     # Create rmap user via web API
-    # TODO - Move JSON to file so we can catch stdout/stderr in log file?
     print_green "Creating user 'rmap'..."
+    JSON="
+        {
+            \"username\": \"$GRAPHDB_USER\",
+            \"password\": \"$GRAPHDB_PASSWORD\",
+            \"confirmpassword\": \"$GRAPHDB_PASSWORD\",
+            \"grantedAuthorities\": [\"ROLE_USER\", \"ROLE_REPO_ADMIN\"]
+        }
+    "
     curl -X POST \
-        $RESTAPI/security/user \
+        -u admin:root \
         -H 'Content-Type: application/json' \
         -H 'Accept: text/plain' \
-        -d @- &>> $LOGFILE << EOF
-        {
-            "username": "$GRAPHDB_USER",
-            "password": "$GRAPHDB_PASSWORD",
-            "confirmpassword": "$GRAPHDB_PASSWORD",
-            "grantedAuthorities": ["ROLE_USER", "ROLE_REPO_ADMIN"]
-        }
-EOF
-    [[ $? ]] \
-        || abort "Could not create GraphDB user '$GRAPHDB_USER'"
+        -d "$JSON" \
+        $RESTAPI/security/user \
+	&>> $LOGFILE \
+            || abort "Could not create GraphDB user '$GRAPHDB_USER'"
 
     # Turn security on via web API
     print_green "Adjusting security settings..."
     curl -X POST \
-        $RESTAPI/security \
+        -u admin:root \
         -H 'Content-Type: application/json' \
         -H 'Accept: */*' \
         -d 'true' \
+        $RESTAPI/security \
         &>> $LOGFILE \
             || abort "Could not turn on GraphDB security"
 
     # Turning "Free Access" off causes an HTTP 400 error.
     #curl -X POST \
-    #    $RESTAPI/security/freeaccess \
+    #    -u admin:root \
     #    -H 'Content-Type: application/json' \
     #    -H 'Accept: */*' \
     #    -d { "authorities": ["string"], "enabled": false } \
+    #    $RESTAPI/security/freeaccess \
     #    &>> $LOGFILE
 fi
 

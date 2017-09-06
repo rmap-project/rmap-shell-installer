@@ -68,8 +68,12 @@ KEYSTORE_PATH=$TOMCAT_PATH/conf/$KEYSTORE_FILE
 
 LOGFILE=installer.log
 
-# Get the ID of the current user
-USERID=`logname`
+# Get the ID of the 'real' current user
+if [[ $SUDO_USER != "" ]]; then
+    USERID=$SUDO_USER
+else
+    USERID=`whoami`
+fi
 
 ###############################################################################
 # Printing and logging
