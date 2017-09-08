@@ -103,8 +103,10 @@ fi
 if [[ $INSTALL_TYPE == "NEW" ]]; then
     ensure_installed iptables-services
     print_green "Setting up Firewall..."
-    systemctl disable firewalld &>> $LOGFILE \
-        || abort "Could not disable firewalld"
+    if [[ `rpm -q firewalld` != "package firewalld is not installed" ]]; then
+        systemctl disable firewalld &>> $LOGFILE \
+            || abort "Could not disable firewalld"
+    fi
     systemctl enable iptables &>> $LOGFILE \
         || abort "Could not enable iptables"
     systemctl start iptables &>> $LOGFILE \

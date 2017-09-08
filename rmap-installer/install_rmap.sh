@@ -36,6 +36,7 @@ ensure_perl_installed ExtUtils::MakeMaker
 ensure_perl_installed Text::ParseWords
 ensure_perl_installed Fcntl
 
+ensure_installed epel-release
 ensure_installed perl-BerkeleyDB
 
 ################################################################################
