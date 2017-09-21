@@ -8,8 +8,8 @@
 # domain name.  This must be set up before the installation scripts are run.
 # "localhost" is a valid name for the GRAPHDB and MARIADB domains if they
 # are running on the same system as the Tomcat component.
-TOMCAT_DOMAIN_NAME=rmap2.trumbore.com
-GRAPHDB_DOMAIN_NAME=rmap.trumbore.com
+TOMCAT_DOMAIN_NAME=[yourdomain]
+GRAPHDB_DOMAIN_NAME=localhost
 MARIADB_DOMAIN_NAME=localhost
 
 ################################################################################
@@ -54,6 +54,6 @@ GRAPHDB_PASSWORD=rmap
 
 # The Google OAuth account must authorize https://[yourdomain]/user/googlecallback.
 # The Google OAuth account must enable the Google+ API.
-GOOGLE_OAUTH_KEY=955897092185-0ipd5rsij456ujd6grsi0t00vd0q538p.apps.googleusercontent.com
-GOOGLE_OAUTH_SECRET=VJ8IoffrycdlkhEtEVUUXq_5
+GOOGLE_OAUTH_KEY=[yourkey]
+GOOGLE_OAUTH_SECRET=[yoursecret]
 
