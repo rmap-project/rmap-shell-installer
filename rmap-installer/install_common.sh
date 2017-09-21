@@ -221,17 +221,19 @@ function ensure_root_folder
     fi
 }
 
-# Confirms the existance of, or creates, a sub-folder of the root folder.
-# The name of the sub-folder is the first parameter.
-# The name of the component that needs the folder is the second parameter.
-function ensure_sub_folder
+# Confirms the existance of, or creates, a sub-folder of the given folder.
+# The name fo the parent folder is the first parameter.
+# The name of the sub-folder is the second parameter.
+function ensure_folder
 {
-    if [[ ! -d $PARENT_DIR/$1 ]]; then
-        print_green "Creating folder for ${2}..."
-        mkdir $PARENT_DIR/$1 &>> $LOGFILE \
+    pushd $1 &>> $LOGFILE
+    if [[ ! -d $2 ]]; then
+        print_green "Creating ${2} folder..."
+        mkdir $2 &>> $LOGFILE \
             || abort "Could not create ${2} folder"
-        set_owner_and_group $PARENT_DIR/$1
+        set_owner_and_group $2
     fi
+    popd &>> $LOGFILE
 }
 
 # If the identified service is running, it is stopped.
