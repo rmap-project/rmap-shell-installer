@@ -108,5 +108,28 @@ else
     print_bold_white "Done installing MariaDB!"
     print_white "" # Blank line
 
+    # If this is not the system where Tomcat is running, set up the firewall:
+    #   Clear out any rules that might mess up our efforts.
+    #   Open the MariaDB port.
+    #   Save settings for use when iptables restarts.
+    # WARNING: This may disrupt systems with existing rules!
+    if [[ $MARIADB_DOMAIN_NAME != "localhost" && \
+    $MARIADB_DOMAIN_NAME != $TOMCAT_DOMAIN_NAME ]]; then
+        print_green "Configuring Firewall..."
+        iptables -F \
+            || abort "Could not flush iptables rule chains"
+        iptables -X \
+            || abort "Could not flush iptables rule chains"
+        iptables -t nat -F \
+            || abort "Could not flush iptables rule chains"
+        iptables -t nat -X \
+            || abort "Could not flush iptables rule chains"
+        iptables -t nat -A INPUT -p tcp --dport 3306 -j ACCEPT \
+            &>> $LOGFILE \
+            || abort "Could not open port 3306"
+        service iptables save &>> $LOGFILE \
+            || "Could not save iptables settings"
+    fi
+
 fi
 

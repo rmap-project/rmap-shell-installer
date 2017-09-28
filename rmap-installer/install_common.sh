@@ -150,12 +150,6 @@ function abort
 IPADDR=`hostname -I 2>> $LOGFILE | tr -d '[:space:]'` \
     || abort "Could not find IP address"
 
-# Make sure yum is ready to install new modules
-print_green "Updating yum cache..."
-yum makecache fast &>> $LOGFILE \
-    || abort "Could not update yum cache"
-print_white "" # A blank line
-
 ###############################################################################
 # Utility functions
 
@@ -172,8 +166,17 @@ function confirm_sudo
 
 # Install or update a named CentOS package.
 # The name of the package is the only parameter.
+YUM_UPDATED=false
 function ensure_installed
 {
+    if [[ $YUM_UPDATED == false ]]; then
+        # Make sure yum is ready to install new modules
+        print_green "Updating yum cache..."
+        yum makecache fast &>> $LOGFILE \
+            || abort "Could not update yum cache"
+        YUM_UPDATED=true
+    fi
+
     NAME=$1
     if [[ `rpm -q $NAME` == "package $NAME is not installed" ]]; then
         print_green "Installing '$NAME'..."
