@@ -22,17 +22,14 @@ fi
 
 # Validate snapshot file
 FILE_NAME=$1
-# TODO - Allow backup folder name to be a configurable?  Configurable location?
-BACKUP_FOLDER=$GRAPHDB_DIR/backups
-INPUT_FILE=$PARENT_DIR/$BACKUP_FOLDER/$FILE_NAME
+INPUT_FILE=$GRAPHDB_BACKUP_PATH/$FILE_NAME
 if [[ ! -e $INPUT_FILE ]]; then
     abort "Could not find snapshot file $INPUT_FILE"
 fi
 
 # Copy snapshot file into folder from which GraphDB can upload
-# TODO - Ensure that this is the folder used on all cloud platforms (home dir of creating user)
 ensure_folder "/home/$USERID" "graphdb-import"
-cp $INPUT_FILE /home/$USERID/graphdb-import/statements.nq
+cp $INPUT_FILE /home/$USERID/graphdb-import
 
 # Clear the current contents of the repository.
 # TODO - Offer warning and/or ask user if it's OK to continue before deleting?
@@ -40,18 +37,18 @@ print_green "Deleting existing statements..."
 curl -X DELETE \
     -u $GRAPHDB_USER:$GRAPHDB_PASSWORD \
     -H 'Accept: application/json' \
-    http://$GRAPHDB_DOMAIN_NAME:7200/repositories/$GRAPHDB_DBNAME/statements \
+    $GRAPHDB_URL/repositories/$GRAPHDB_DBNAME/statements \
     &>> $LOGFILE \
        || abort "Could not delete all statements from GraphDB repository '$GRAPHDB_DBNAME'"
 
 # Upload the snapshot to the repository
 print_green "Uploading new statements..."
-RESTAPI=http://$GRAPHDB_DOMAIN_NAME:7200/rest/data/import/server/
+RESTAPI=$GRAPHDB_URL/rest/data/import/server
 curl -X POST \
     -u $GRAPHDB_USER:$GRAPHDB_PASSWORD \
     -H 'Content-Type: application/json' \
     -H 'Accept: application/json' \
-    $RESTAPI/$GRAPHDB_DBNAME?fileName=statements.nq \
+    $RESTAPI/$GRAPHDB_DBNAME?fileName=$FILE_NAME \
     &>> $LOGFILE \
        || abort "Could not upload statements to GraphDB repository '$GRAPHDB_DBNAME'"
 

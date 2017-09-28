@@ -49,6 +49,22 @@ GRAPHDB_PASSWORD=rmap
 
 ################################################################################
 
+# Variables to control the backup and restore scripts for GraphDB.
+
+# Local path where backup files are stored.  Will be created if nonexistant.
+GRAPHDB_BACKUP_PATH=/rmap/graphdb/backups
+
+# URL for the GraphDB server root, typically http://$GRAPHDB_DOMAIN_NAME:7200.
+GRAPHDB_URL=http://$GRAPHDB_DOMAIN_NAME:7200
+
+# MIME type and file extension for creating backup files.
+# Common pairings are text/x-nquads and "nq", application/ld+json and "jsonld".
+# See http://graphdb.ontotext.com/documentation/6.6/standard/quick-start-guide.html#supported-export-download-formats
+GRAPHDB_BACKUP_MIME_TYPE=text/x-nquads
+GRAPHDB_BACKUP_FILE_EXT=nq
+
+################################################################################
+
 # Information about the OAuth credentials that will be used to allow new users
 # to register themselves with the RMap server.
 
