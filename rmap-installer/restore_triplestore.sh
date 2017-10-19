@@ -54,6 +54,7 @@ curl -X POST \
     -u $GRAPHDB_USER:$GRAPHDB_PASSWORD \
     -H 'Content-Type: application/json' \
     -H 'Accept: application/json' \
+    "$RESTAPI/$GRAPHDB_DBNAME?fileName=$FILE_NAME&chunkSize=200000" \
     &>> $LOGFILE \
        || abort "Could not upload statements to GraphDB repository '$GRAPHDB_DBNAME'"
 
