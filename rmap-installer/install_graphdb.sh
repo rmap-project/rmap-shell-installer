@@ -99,7 +99,12 @@ fi
 
 # Create and start a service for GraphDB
 print_green "Setting up GraphDB service..."
-sed "s,USERID,$USERID,; s,JAVAHOME,$JAVA_PATH,; s,GRAPHDB,$GRAPHDB_PATH," \
+sed " \
+    s,USERID,$USERID,; \
+    s,JAVAHOME,$JAVA_PATH,; \
+    s,GRAPHDB_HEAP_SIZE,$GRAPHDB_HEAP_SIZE,g; \
+    s,GRAPHDB,$GRAPHDB_PATH,; \
+    " \
     < graphdb.service > /etc/systemd/system/graphdb.service 2>> $LOGFILE \
     || abort "Could not configure GraphDB service"
 systemctl daemon-reload &>> $LOGFILE \

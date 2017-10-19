@@ -14,7 +14,7 @@ Type=forking
 
 Environment=JAVA_HOME=JAVAHOME
 
-ExecStart=GRAPHDB/bin/graphdb -d
+ExecStart=GRAPHDB/bin/graphdb -d -XmsGRAPHDB_HEAP_SIZE -XmxGRAPHDB_HEAP_SIZE
 # To find graphdb PID: filter 'ps' output twice, take first word in result.
 ExecStop=sudo kill `ps ax | grep graphdb | grep java | awk '{print $1;}'`
 Restart=on-failure

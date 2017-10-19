@@ -243,7 +243,7 @@ function ensure_folder
 # The name of the serivce is the only parameter.
 function ensure_service_stopped
 {
-    if [[ `systemctl status $1 &>> $LOGFILE | grep "running" | wc -l` == "1" ]]; then
+    if [[ `systemctl status $1 2>> $LOGFILE | grep "running" | wc -l` == "1" ]]; then
         print_green "Stopping $1 service..."
         systemctl stop $1 &>> $LOGFILE \
             || abort "Could not stop $1 service"

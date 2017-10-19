@@ -47,6 +47,10 @@ GRAPHDB_DBNAME=rmap
 GRAPHDB_USER=rmap
 GRAPHDB_PASSWORD=rmap
 
+# The heap size to be used by the GraphDB process, as specified for a Java process.
+# Examples are 2g or 2048m for 2 Gigabytes.
+GRAPHDB_HEAP_SIZE=5g
+
 ################################################################################
 
 # Variables to control the backup and restore scripts for GraphDB.

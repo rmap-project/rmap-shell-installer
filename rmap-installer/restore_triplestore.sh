@@ -27,9 +27,15 @@ if [[ ! -e $INPUT_FILE ]]; then
     abort "Could not find snapshot file $INPUT_FILE"
 fi
 
-# Copy snapshot file into folder from which GraphDB can upload
+# Link to snapshot file from folder from which GraphDB can upload
 ensure_folder "/home/$USERID" "graphdb-import"
-cp $INPUT_FILE /home/$USERID/graphdb-import
+SERVER_FILE="/home/$USERID/graphdb-import/$FILE_NAME"
+if [[ -e $SERVER_FILE ]]; then
+    rm $SERVER_FILE &>> $LOGFILE \
+        || abort "Could not remove previous upload file link"
+fi
+ln -s $INPUT_FILE /home/$USERID/graphdb-import &>> $LOGFILE \
+    || abort "Could not create upload file link"
 
 # Clear the current contents of the repository.
 # TODO - Offer warning and/or ask user if it's OK to continue before deleting?
@@ -48,8 +54,7 @@ curl -X POST \
     -u $GRAPHDB_USER:$GRAPHDB_PASSWORD \
     -H 'Content-Type: application/json' \
     -H 'Accept: application/json' \
-    $RESTAPI/$GRAPHDB_DBNAME?fileName=$FILE_NAME \
     &>> $LOGFILE \
        || abort "Could not upload statements to GraphDB repository '$GRAPHDB_DBNAME'"
 
-print_bold_white "Done uploading snapshot to GraphDB!"
+print_bold_white "The snapshot has been queued for uploading to GraphDB!"
